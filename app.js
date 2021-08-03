@@ -2,12 +2,24 @@ const cors = require('cors');
 const express = require('express')
 const { Client } = require('pg');
 
-const db = new Client({
-  user: process.env.DATABASE_USER,
-  database: process.env.DATABASE_NAME,
-  password: process.env.DATABASE_PASSWORD,
-  host: process.env.DATABASE_HOST
-})
+let db;
+if (process.env.DATABASE_URL) {
+  db = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+} else {
+  db = new Client({
+    user: process.env.DATABASE_USER,
+    database: process.env.DATABASE_NAME,
+    password: process.env.DATABASE_PASSWORD,
+    host: process.env.DATABASE_HOST
+  });
+}
+
+
 db.connect();
 
 const createItemTable = async () => {
