@@ -1,16 +1,12 @@
-const cors = require('cors');
-const express = require('express')
+const createServer = require("./app");
 
-function createServer() {
-  const app = express()
-  app.use(express.json())
-  app.use(cors());
+let port = process.env.PORT;
+if (!port) {
+  port = 3000;
+}
 
-  app.get('/ping', (req, res) => {
-    res.send('Pong! ')
-  })
-  return app
-};
+let app = createServer();
 
-
-module.exports = createServer
+app.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`)
+});
