@@ -1,6 +1,8 @@
 const cors = require('cors');
 const express = require('express')
 const {Client} = require('pg');
+const jwt = require('express-jwt');
+const jwksRsa = require('jwks-rsa');
 
 const sentry = require("@sentry/node");
 const tracing = require("@sentry/tracing");
@@ -23,6 +25,26 @@ if (process.env.DATABASE_URL) {
 }
 
 db.connect();
+
+
+const auth0Domain = "https://careers-in-code-test-practice.us.auth0.com"
+
+const checkJwt = jwt({
+  // Dynamically provide a signing key
+  // based on the kid in the header and
+  // the signing keys provided by the JWKS endpoint.
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: `${auth0Domain}/.well-known/jwks.json`
+  }),
+
+  audience: `https://my-backend.com/api/v1`,
+  issuer: [`${auth0Domain}/`],
+  algorithms: ['RS256']
+});
+
 
 const createItemTable = async () => {
     await db.query(`
@@ -63,7 +85,7 @@ const createServer = () => {
     app.use(cors());
 
 
-    app.get('/items', async (req, res) => {
+    app.get('/items', checkJwt, async (req, res) => {
         res.send({items: await getItems()})
     })
 
