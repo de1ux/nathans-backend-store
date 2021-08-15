@@ -1,6 +1,8 @@
 const cors = require('cors');
 const express = require('express')
 const {Client} = require('pg');
+const jwt = require('express-jwt');
+const jwksRsa = require('jwks-rsa');
 
 const sentry = require("@sentry/node");
 const tracing = require("@sentry/tracing");
@@ -36,6 +38,7 @@ const checkPermissions = (permissions) => {
     });
 };
 
+const auth0Domain = "https://careers-in-code-test-practice.us.auth0.com"
 
 const checkJwt = jwt({
   // Dynamically provide a signing key
@@ -53,10 +56,6 @@ const checkJwt = jwt({
   algorithms: ['RS256']
 });
 
-
-
-
->>>>>>> Stashed changes
 const createItemTable = async () => {
     await db.query(`
     CREATE TABLE IF NOT EXISTS items (

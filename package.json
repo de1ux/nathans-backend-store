@@ -8,6 +8,9 @@
     "@sentry/tracing": "^6.10.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "express-jwt": "^6.0.0",
+    "express-jwt-authz": "^2.4.1",
+    "jwks-rsa": "^2.0.4",
     "pg": "^8.7.1"
   },
   "devDependencies": {
@@ -20,6 +23,6 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": "14.x"
+    "node": "16.x"
   }
 }
