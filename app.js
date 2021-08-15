@@ -4,6 +4,7 @@ const {Client} = require('pg');
 
 const sentry = require("@sentry/node");
 const tracing = require("@sentry/tracing");
+const jwtAuthz = require("express-jwt-authz");
 
 let db;
 if (process.env.DATABASE_URL) {
@@ -24,6 +25,38 @@ if (process.env.DATABASE_URL) {
 
 db.connect();
 
+
+const auth0Domain = process.env.AUTH0_DOMAIN;
+
+const checkPermissions = (permissions) => {
+    return jwtAuthz(permissions, {
+        customScopeKey: "permissions",
+        checkAllScopes: true,
+        failWithError: false
+    });
+};
+
+
+const checkJwt = jwt({
+  // Dynamically provide a signing key
+  // based on the kid in the header and
+  // the signing keys provided by the JWKS endpoint.
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: `${auth0Domain}/.well-known/jwks.json`
+  }),
+
+  audience: `https://my-backend.com/api/v1`,
+  issuer: [`${auth0Domain}/`],
+  algorithms: ['RS256']
+});
+
+
+
+
+>>>>>>> Stashed changes
 const createItemTable = async () => {
     await db.query(`
     CREATE TABLE IF NOT EXISTS items (
@@ -32,6 +65,12 @@ const createItemTable = async () => {
     );
   `);
 }
+
+db.query("INSERT INTO items VALUES($1, $2, $3)", ["cups", 10, {
+    seller: "nathan",
+    shippingLocation: "my house"
+}])
+
 
 const getItems = async () => {
     const items = await db.query("SELECT * FROM items")
@@ -57,18 +96,29 @@ const createServer = () => {
         tracesSampleRate: 1.0,
     });
 
+    // Now we are injecting our middleware
     app.use(sentry.Handlers.requestHandler());
     app.use(sentry.Handlers.tracingHandler());
     app.use(express.json())
     app.use(cors());
 
-
-    app.get('/items', async (req, res) => {
+    // Now we're fetching items
+    app.get('/items', checkJwt, checkPermissions(['manage:admin']), async (req, res) => {
         res.send({items: await getItems()})
     })
 
     app.get('/error', (req, res) => {
         throw new Error("Raising an error!");
+    })
+
+    app.post('/lucky-shopper', (req, res) => {
+        luckyShopper = req.body['luckyShopper']
+
+        res.send({'luckyShopper': luckyShopper})
+    })
+
+    app.get('/lucky-shopper', (req, res) => {
+        res.send({'luckyShopper': luckyShopper})
     })
 
     app.use(sentry.Handlers.errorHandler());
