@@ -7,6 +7,11 @@ const jwksRsa = require('jwks-rsa');
 const sentry = require("@sentry/node");
 const tracing = require("@sentry/tracing");
 const jwtAuthz = require("express-jwt-authz");
+const axios = require("axios");
+
+const adminEmails = [
+    'nathan@gmail.com'
+]
 
 let db;
 if (process.env.DATABASE_URL) {
@@ -26,9 +31,6 @@ if (process.env.DATABASE_URL) {
 }
 
 db.connect();
-
-
-const auth0Domain = process.env.AUTH0_DOMAIN;
 
 const checkPermissions = (permissions) => {
     return jwtAuthz(permissions, {
@@ -65,12 +67,6 @@ const createItemTable = async () => {
   `);
 }
 
-db.query("INSERT INTO items VALUES($1, $2, $3)", ["cups", 10, {
-    seller: "nathan",
-    shippingLocation: "my house"
-}])
-
-
 const getItems = async () => {
     const items = await db.query("SELECT * FROM items")
     return items.rows;
@@ -102,7 +98,15 @@ const createServer = () => {
     app.use(cors());
 
     // Now we're fetching items
-    app.get('/items', checkJwt, checkPermissions(['manage:admin']), async (req, res) => {
+    app.get('/items', checkJwt, async (req, res) => {
+        const accessToken = req.headers['authorization']
+
+        const userDetails = await axios.get("https://careers-in-code-test-practice.us.auth0.com/userinfo", {
+            headers: {
+                'Authorization': accessToken
+            }
+        }).then(d => d.data)
+
         res.send({items: await getItems()})
     })
 
